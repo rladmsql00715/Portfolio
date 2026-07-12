@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Who is she</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    /* ── 페이지 히어로 ── */
+    .page-hero {
+      padding: 140px 48px 56px;
+      text-align: center;
+    }
+
+    .page-hero h1 {
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      color: #1a1a1a;
+      margin-bottom: 40px;
+    }
+
+    /* ── 검색창 ── */
+    .search-wrap {
+      max-width: 640px;
+      margin: 0 auto 56px;
+      position: relative;
+    }
+
+    .search-wrap .search-icon {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #aaaaaa;
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 16px 20px 16px 48px;
+      font-size: 1rem;
+      font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      color: #1a1a1a;
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 50px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+      outline: none;
+      transition: box-shadow 0.25s, border-color 0.25s;
+    }
+
+    .search-input::placeholder { color: #aaaaaa; }
+    .search-input:focus {
+      border-color: rgba(180,180,180,0.6);
+      box-shadow: 0 6px 28px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    /* ── 카테고리 노드 ── */
+    .category-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 48px 64px;
+    }
+
+    .category-nodes {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
+
+    .cat-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .cat-node-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+
+    .cat-node:hover .cat-node-circle,
+    .cat-node.active .cat-node-circle {
+      transform: scale(1.07);
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.11), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .cat-node-label {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #555555;
+      letter-spacing: 0.3px;
+    }
+
+    .cat-node.active .cat-node-label {
+      color: #1a1a1a;
+    }
+
+    /* ── 콘텐츠 패널 ── */
+    .content-panel {
+      display: none;
+      animation: fadeUp 0.35s ease;
+    }
+
+    .content-panel.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 섹션 제목 */
+    .panel-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+    }
+
+    /* 테이블 형식 행 */
+    .resume-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 24px;
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.8);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .resume-row:hover {
+      background: rgba(255,255,255,0.7);
+      transform: translateX(4px);
+    }
+
+    .resume-row .item-name {
+      flex: 1;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #222222;
+    }
+
+    .resume-row .item-date {
+      font-size: 0.82rem;
+      color: #999999;
+      white-space: nowrap;
+    }
+
+    /* 스킬 바 */
+    .skill-item {
+      padding: 18px 24px;
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.8);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .skill-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .skill-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #222222;
+    }
+
+    .skill-pct {
+      font-size: 0.8rem;
+      color: #aaaaaa;
+    }
+
+    .skill-bar-bg {
+      height: 5px;
+      background: rgba(0,0,0,0.07);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .skill-bar-fill {
+      height: 100%;
+      background: #555555;
+      border-radius: 10px;
+    }
+
+    /* ── 검색 결과 ── */
+    .search-results {
+      display: none;
+    }
+
+    .search-results.active {
+      display: block;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .search-empty {
+      text-align: center;
+      color: #aaaaaa;
+      font-size: 0.9rem;
+      padding: 40px 0;
+    }
+
+    .result-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #aaaaaa;
+      text-transform: uppercase;
+      margin: 24px 0 10px;
+    }
+
+    .result-tag:first-child { margin-top: 0; }
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="top-bar-left">EUNBI KIM</div>
+    <nav class="top-bar-nav">
+      <ul>
+        <li><a href="who.html">Who is she</a></li>
+        <li><a href="life.html">My life is..</a></li>
+        <li><a href="dream.html">I want to be...</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <div class="page-hero">
+    <h1>Who is she</h1>
+
+    <div class="search-wrap">
+      <span class="search-icon">&#128269;</span>
+      <input class="search-input" id="searchInput"
+             type="text" placeholder="원하는 정보를 검색해보세요">
+    </div>
+  </div>
+
+  <div class="category-section">
+
+    <!-- 카테고리 노드 -->
+    <div class="category-nodes">
+      <button class="cat-node" data-cat="edu">
+        <div class="cat-node-circle">🎓</div>
+        <span class="cat-node-label">학력</span>
+      </button>
+      <button class="cat-node" data-cat="exp">
+        <div class="cat-node-circle">💼</div>
+        <span class="cat-node-label">경험</span>
+      </button>
+      <button class="cat-node" data-cat="award">
+        <div class="cat-node-circle">🏆</div>
+        <span class="cat-node-label">수상</span>
+      </button>
+      <button class="cat-node" data-cat="career">
+        <div class="cat-node-circle">🚀</div>
+        <span class="cat-node-label">커리어</span>
+      </button>
+      <button class="cat-node" data-cat="skill">
+        <div class="cat-node-circle">🛠</div>
+        <span class="cat-node-label">역량 / 툴</span>
+      </button>
+    </div>
+
+    <!-- 검색 결과 영역 -->
+    <div class="search-results" id="searchResults"></div>
+
+    <!-- 학력 -->
+    <div class="content-panel" id="panel-edu">
+      <p class="panel-title">학력</p>
+      <div class="resume-row">
+        <span class="item-name">계명대학교 / 광고홍보학과</span>
+        <span class="item-date">2021.03 ~ 현재</span>
+      </div>
+      <div class="resume-row">
+        <span class="item-name">VanWest College (Canada)</span>
+        <span class="item-date">2024.07 ~ 2024.08</span>
+      </div>
+    </div>
+
+    <!-- 경험 -->
+    <div class="content-panel" id="panel-exp">
+      <p class="panel-title">경험</p>
+      <div class="resume-row">
+        <span class="item-name">KT&G 상상마케팅스쿨</span>
+        <span class="item-date">2023.05.02 ~ 2023.05.26</span>
+      </div>
+      <div class="resume-row">
+        <span class="item-name">퓨어리 뷰티서포터즈</span>
+        <span class="item-date">2024.05.10 ~ 2024.06.12</span>
+      </div>
+      <div class="resume-row">
+        <span class="item-name">디지털 창작 교육</span>
+        <span class="item-date">2025.08.09 ~ 2025.08.10</span>
+      </div>
+    </div>
+
+    <!-- 수상 -->
+    <div class="content-panel" id="panel-award">
+      <p class="panel-title">수상</p>
+      <div class="resume-row">
+        <span class="item-name">생성형 AI활용 창업경진대회</span>
+        <span class="item-date">2023.11.18</span>
+      </div>
+      <div class="resume-row">
+        <span class="item-name">꿈청춘 에세이 공모전</span>
+        <span class="item-date">2025.04.29</span>
+      </div>
+      <div class="resume-row">
+        <span class="item-name">굿럭굿잡 아카데미 프로젝트</span>
+        <span class="item-date">2023.03.14 ~ 2025.07.07</span>
+      </div>
+    </div>
+
+    <!-- 커리어 -->
+    <div class="content-panel" id="panel-career">
+      <p class="panel-title">커리어</p>
+      <div class="resume-row">
+        <span class="item-name">파인스테이 인턴</span>
+        <span class="item-date">2025.05.12 ~ 2025.08.08</span>
+      </div>
+    </div>
+
+    <!-- 역량/툴 -->
+    <div class="content-panel" id="panel-skill">
+      <p class="panel-title">역량 / 툴</p>
+      <div class="skill-item">
+        <div class="skill-header">
+          <span class="skill-name">일러스트레이터</span>
+          <span class="skill-pct">60%</span>
+        </div>
+        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:60%"></div></div>
+      </div>
+      <div class="skill-item">
+        <div class="skill-header">
+          <span class="skill-name">프리미어 프로</span>
+          <span class="skill-pct">45%</span>
+        </div>
+        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:45%"></div></div>
+      </div>
+      <div class="skill-item">
+        <div class="skill-header">
+          <span class="skill-name">PPT</span>
+          <span class="skill-pct">80%</span>
+        </div>
+        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:80%"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ── 카테고리 노드 클릭 ── */
+    const catNodes = document.querySelectorAll('.cat-node');
+    const panels   = document.querySelectorAll('.content-panel');
+    const searchResults = document.getElementById('searchResults');
+    const searchInput   = document.getElementById('searchInput');
+
+    catNodes.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cat = btn.dataset.cat;
+        const isActive = btn.classList.contains('active');
+
+        catNodes.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        searchResults.classList.remove('active');
+        searchInput.value = '';
+
+        if (!isActive) {
+          btn.classList.add('active');
+          document.getElementById('panel-' + cat).classList.add('active');
+        }
+      });
+    });
+
+    /* ── 검색 데이터 ── */
+    const allData = [
+      { cat: '학력', name: '계명대학교 / 광고홍보학과', date: '2021.03 ~ 현재' },
+      { cat: '학력', name: 'VanWest College (Canada)', date: '2024.07 ~ 2024.08' },
+      { cat: '경험', name: 'KT&G 상상마케팅스쿨', date: '2023.05.02 ~ 2023.05.26' },
+      { cat: '경험', name: '퓨어리 뷰티서포터즈', date: '2024.05.10 ~ 2024.06.12' },
+      { cat: '경험', name: '디지털 창작 교육', date: '2025.08.09 ~ 2025.08.10' },
+      { cat: '수상', name: '생성형 AI활용 창업경진대회', date: '2023.11.18' },
+      { cat: '수상', name: '꿈청춘 에세이 공모전', date: '2025.04.29' },
+      { cat: '수상', name: '굿럭굿잡 아카데미 프로젝트', date: '2023.03.14 ~ 2025.07.07' },
+      { cat: '커리어', name: '파인스테이 인턴', date: '2025.05.12 ~ 2025.08.08' },
+      { cat: '역량/툴', name: '일러스트레이터', date: '' },
+      { cat: '역량/툴', name: '프리미어 프로', date: '' },
+      { cat: '역량/툴', name: 'PPT', date: '' },
+    ];
+
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim();
+
+      if (!q) {
+        searchResults.classList.remove('active');
+        return;
+      }
+
+      catNodes.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+
+      const matched = allData.filter(d =>
+        d.name.toLowerCase().includes(q.toLowerCase()) ||
+        d.cat.includes(q) ||
+        d.date.includes(q)
+      );
+
+      if (matched.length === 0) {
+        searchResults.innerHTML = '<p class="search-empty">검색 결과가 없습니다.</p>';
+      } else {
+        // 카테고리별로 묶기
+        const grouped = {};
+        matched.forEach(d => {
+          if (!grouped[d.cat]) grouped[d.cat] = [];
+          grouped[d.cat].push(d);
+        });
+
+        let html = '';
+        for (const [cat, items] of Object.entries(grouped)) {
+          html += `<p class="result-tag">${cat}</p>`;
+          items.forEach(item => {
+            html += `
+              <div class="resume-row">
+                <span class="item-name">${item.name}</span>
+                <span class="item-date">${item.date}</span>
+              </div>`;
+          });
+        }
+        searchResults.innerHTML = html;
+      }
+
+      searchResults.classList.add('active');
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>I want to be...</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { overflow: hidden; }
+
+    .mindmap-section {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: filter 0.4s ease;
+    }
+
+    .mindmap-section.blurred {
+      filter: blur(4px);
+      pointer-events: none;
+    }
+
+    /* SVG 연결선 */
+    .mindmap-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .branch-line {
+      stroke: rgba(0, 0, 0, 0.15);
+      stroke-width: 1.5;
+      fill: none;
+      stroke-dasharray: 200;
+      stroke-dashoffset: 200;
+      transition: stroke-dashoffset 0.35s ease;
+    }
+    .branch-line.active { stroke-dashoffset: 0; }
+
+    /* 중심 노드 */
+    .node-center {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #1a1a1a;
+      letter-spacing: -0.5px;
+      z-index: 10;
+      transform: translate(-50%, -50%);
+      left: 50%;
+      top: 50%;
+    }
+
+    /* 가지 노드 */
+    .node-branch {
+      position: absolute;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: transparent;
+      text-align: center;
+      z-index: 9;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      background: transparent;
+      border: 1.5px solid transparent;
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s,
+                  color 0.3s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .node-branch:hover {
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-color: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+      color: #333333;
+      transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    /* ── 세부 패널 ── */
+    .detail-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 420px;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-left: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.08);
+      z-index: 200;
+      transform: translateX(100%);
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 80px 44px 48px;
+      overflow-y: auto;
+    }
+
+    .detail-panel.open {
+      transform: translateX(0);
+    }
+
+    .panel-close {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.06);
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .panel-close:hover { background: rgba(0,0,0,0.12); }
+
+    .panel-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #aaaaaa;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .panel-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #1a1a1a;
+      letter-spacing: -1px;
+      margin-bottom: 28px;
+      line-height: 1.15;
+    }
+
+    .panel-divider {
+      width: 40px;
+      height: 2px;
+      background: rgba(0,0,0,0.12);
+      margin-bottom: 28px;
+    }
+
+    .panel-body {
+      font-size: 0.95rem;
+      line-height: 1.85;
+      color: #555555;
+      flex: 1;
+    }
+
+    /* 힌트 */
+    .hint {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.78rem;
+      color: #aaaaaa;
+      letter-spacing: 1px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .hint.hidden { opacity: 0; }
+
+    .home-btn {
+      position: fixed;
+      bottom: 36px;
+      left: 48px;
+      z-index: 50;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="top-bar-left">EUNBI KIM</div>
+    <nav class="top-bar-nav">
+      <ul>
+        <li><a href="who.html">Who is she</a></li>
+        <li><a href="life.html">My life is..</a></li>
+        <li><a href="dream.html">I want to be...</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <div class="mindmap-section" id="mindmap">
+    <svg class="mindmap-svg" id="svgLines"></svg>
+    <div class="node-center">김은비</div>
+
+    <!--
+      ✏️ 가지 추가 방법:
+      data-angle : 방향 각도 (0=오른쪽, 90=아래, 180=왼쪽, 270=위)
+      data-dist  : 중심에서의 거리(px)
+      data-title : 패널 제목
+      data-desc  : 패널 본문 내용
+    -->
+    <div class="node-branch"
+         data-angle="315" data-dist="220"
+         data-title="모험가"
+         data-desc="낯선 곳으로 떠나는 것이 두렵지 않습니다. 캐나다, 캄보디아, 인도네시아, 프랑스 — 경험한 모든 낯섦이 저를 더 넓은 사람으로 만들었습니다. 모험은 목적지가 아닌, 그 여정 안에 있다고 믿습니다.">
+      모험가
+    </div>
+
+    <div class="node-branch"
+         data-angle="200" data-dist="230"
+         data-title="학생"
+         data-desc="계명대학교 광고홍보학과에서 마케팅과 커뮤니케이션을 배우고 있습니다. 교실 안과 밖 모두에서 배움을 찾습니다. 배운다는 것은 단순히 지식을 쌓는 것이 아니라, 세상을 보는 눈을 넓히는 일이라고 생각합니다.">
+      학생
+    </div>
+
+    <div class="node-branch"
+         data-angle="100" data-dist="220"
+         data-title="마케터"
+         data-desc="콘텐츠 기획, 제안서 제작, 데이터 분석을 통해 사람의 행동을 바꾸는 메시지와 구조를 고민합니다. 실행 → 분석 → 개선의 과정을 반복하며 성과로 연결하는 것을 목표로 합니다.">
+      마케터
+    </div>
+
+    <div class="node-branch"
+         data-angle="20" data-dist="230"
+         data-title="작가"
+         data-desc="생각을 글로 옮기는 것을 좋아합니다. 꿈청춘 에세이 공모전에서 수상하며 글쓰기의 가능성을 확인했습니다. 언젠가 나만의 이야기를 담은 책을 쓰는 것이 꿈입니다.">
+      작가
+    </div>
+
+    <div class="node-branch"
+         data-angle="270" data-dist="240"
+         data-title="크리에이터"
+         data-desc="일러스트레이터, 프리미어 프로, PPT를 활용해 콘텐츠를 만듭니다. 기술은 도구이고, 아이디어가 중심입니다. 보는 사람이 멈추게 되는 콘텐츠를 만드는 것이 목표입니다.">
+      크리에이터
+    </div>
+
+    <!-- ✏️ 새 가지를 여기에 추가하세요 -->
+
+  </div>
+
+  <!-- 세부 패널 -->
+  <div class="detail-panel" id="detailPanel">
+    <button class="panel-close" id="panelClose">✕</button>
+    <p class="panel-tag" id="panelTag">I want to be</p>
+    <h2 class="panel-title" id="panelTitle"></h2>
+    <div class="panel-divider"></div>
+    <div class="panel-body" id="panelBody"></div>
+  </div>
+
+  <p class="hint" id="hint">화면에 커서를 가져다 대세요</p>
+
+  <div class="home-btn">
+    <a class="btn-back" href="index.html">← 홈으로</a>
+  </div>
+
+  <script>
+    const svgEl    = document.getElementById('svgLines');
+    const branches = document.querySelectorAll('.node-branch');
+    const panel    = document.getElementById('detailPanel');
+    const mindmap  = document.getElementById('mindmap');
+    const hint     = document.getElementById('hint');
+    const lines    = [];
+
+    function deg2rad(d) { return d * Math.PI / 180; }
+
+    function layout() {
+      const cx = window.innerWidth  / 2;
+      const cy = window.innerHeight / 2;
+      branches.forEach((node, i) => {
+        const angle = parseFloat(node.dataset.angle);
+        const dist  = parseFloat(node.dataset.dist);
+        const x = cx + dist * Math.cos(deg2rad(angle));
+        const y = cy + dist * Math.sin(deg2rad(angle));
+        node.style.left = x + 'px';
+        node.style.top  = y + 'px';
+        if (lines[i]) {
+          lines[i].setAttribute('x1', cx); lines[i].setAttribute('y1', cy);
+          lines[i].setAttribute('x2', x);  lines[i].setAttribute('y2', y);
+        }
+      });
+    }
+
+    function buildLines() {
+      svgEl.innerHTML = '';
+      lines.length = 0;
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      branches.forEach((node, i) => {
+        const x = parseFloat(node.style.left);
+        const y = parseFloat(node.style.top);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+        line.setAttribute('x2', x);  line.setAttribute('y2', y);
+        line.classList.add('branch-line');
+        svgEl.appendChild(line);
+        lines.push(line);
+
+        node.addEventListener('mouseenter', () => line.classList.add('active'));
+        node.addEventListener('mouseleave', () => line.classList.remove('active'));
+
+        // 클릭 시 패널 열기
+        node.addEventListener('click', () => openPanel(node));
+      });
+    }
+
+    function openPanel(node) {
+      document.getElementById('panelTitle').textContent = node.dataset.title;
+      document.getElementById('panelBody').textContent  = node.dataset.desc;
+      panel.classList.add('open');
+      mindmap.classList.add('blurred');
+      hint.classList.add('hidden');
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      mindmap.classList.remove('blurred');
+      hint.classList.remove('hidden');
+    }
+
+    document.getElementById('panelClose').addEventListener('click', closePanel);
+
+    // 패널 바깥(마인드맵 배경) 클릭 시 닫기
+    document.getElementById('mindmap').addEventListener('click', (e) => {
+      if (!e.target.classList.contains('node-branch')) closePanel();
+    });
+
+    layout();
+    buildLines();
+    window.addEventListener('resize', layout);
+  </script>
+
+</body>
+</html>
